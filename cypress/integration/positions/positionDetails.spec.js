@@ -3,10 +3,6 @@
 // Fixture assumptions (cypress/fixtures/):
 //   interviewFlow.json — 3 steps: Initial Screening (id:1), Technical Interview (id:2), Manager Interview (id:3)
 //   candidates.json    — Carlos García in Initial Screening; John Doe + Jane Smith in Technical Interview
-//
-// Known limitation: react-beautiful-dnd uses pointer events internally, so the drag
-// tests rely on mouse event simulation which may be flaky in headless CI. Install
-// cypress-real-events for production-grade reliability.
 
 const POSITION_ID = 1
 const BACKEND = 'http://localhost:3010'
@@ -75,27 +71,21 @@ describe('Position Details Page', () => {
         statusCode: 200,
         body: { message: 'Candidate stage updated successfully' },
       }).as('updateStage')
-    })
 
-    it('moves the candidate card to the destination column', () => {
       cy.get('[data-cy="stage-column"]').eq(1).as('technicalColumn')
 
       cy.get('[data-cy="stage-column"]').eq(0)
         .contains('[data-cy="candidate-card"]', 'Carlos García')
         .dragTo('@technicalColumn')
+    })
 
+    it('moves the candidate card to the destination column', () => {
       cy.get('@technicalColumn').within(() => {
         cy.get('[data-cy="candidate-card"]').should('contain.text', 'Carlos García')
       })
     })
 
     it('removes the candidate card from the source column after the move', () => {
-      cy.get('[data-cy="stage-column"]').eq(1).as('technicalColumn')
-
-      cy.get('[data-cy="stage-column"]').eq(0)
-        .contains('[data-cy="candidate-card"]', 'Carlos García')
-        .dragTo('@technicalColumn')
-
       cy.get('[data-cy="stage-column"]').eq(0).within(() => {
         cy.get('[data-cy="candidate-card"]').should('not.exist')
       })
@@ -103,12 +93,6 @@ describe('Position Details Page', () => {
 
     it('calls PUT /candidates/:id with applicationId and the destination step id', () => {
       // Moving Carlos García (candidateId:3, applicationId:4) to Technical Interview (stepId:2)
-      cy.get('[data-cy="stage-column"]').eq(1).as('technicalColumn')
-
-      cy.get('[data-cy="stage-column"]').eq(0)
-        .contains('[data-cy="candidate-card"]', 'Carlos García')
-        .dragTo('@technicalColumn')
-
       cy.wait('@updateStage').its('request.body').should('deep.equal', {
         applicationId: 4,
         currentInterviewStep: 2,
@@ -116,18 +100,8 @@ describe('Position Details Page', () => {
     })
 
     it('targets the correct candidate id in the PUT URL', () => {
-      // candidateId:3 must appear in the request URL — not applicationId or stepId
-      cy.intercept('PUT', `${BACKEND}/candidates/3`, {
-        statusCode: 200,
-        body: { message: 'Candidate stage updated successfully' },
-      }).as('updateCorrectCandidate')
-
-      cy.get('[data-cy="stage-column"]').eq(1).as('technicalColumn')
-
-      cy.get('[data-cy="stage-column"]').eq(0)
-        .contains('[data-cy="candidate-card"]', 'Carlos García')
-        .dragTo('@technicalColumn')
-
+      // candidateId:3 must appear in the URL — not applicationId or stepId
+      cy.intercept('PUT', `${BACKEND}/candidates/3`).as('updateCorrectCandidate')
       cy.wait('@updateCorrectCandidate')
     })
   })

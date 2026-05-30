@@ -10,7 +10,7 @@ Priority order: `data-cy` attribute → ARIA role (`cy.findByRole`) → label (`
 Every spec must pass when run alone: `cypress run --spec cypress/integration/path/to/spec.spec.js`. Reset state in `beforeEach`. Never depend on test order or share mutable state across `it` blocks.
 
 ## Test Data
-Run a dedicated `db_test` service defined in `docker-compose.yml` pointing to `LTIdb_test`. Reset it before each run with `prisma migrate reset`. Use `cy.task()` backed by Prisma (defined in `cypress/plugins/index.js`) for per-test record setup and teardown — base tasks on the existing `backend/prisma/seed.ts`. Use `@faker-js/faker` for dynamic fields (names, emails) to avoid collisions. Never hardcode database IDs.
+Run a dedicated `db_test` service defined in `docker-compose.yml` pointing to `LTIdb_test`. Reset it before each run with `prisma migrate reset`. Use `cy.task()` backed by Prisma (registered in `setupNodeEvents` inside `cypress.config.js`) for per-test record setup and teardown — base tasks on the existing `backend/prisma/seed.ts`. Use `@faker-js/faker` for dynamic fields (names, emails) to avoid collisions. Never hardcode database IDs.
 
 ```js
 // example usage in a spec

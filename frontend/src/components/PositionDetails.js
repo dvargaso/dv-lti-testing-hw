@@ -1,10 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
-import { Container, Row, Offcanvas, Button } from 'react-bootstrap';
+import { useParams, useNavigate } from 'react-router-dom';
+import { Container, Row, Button } from 'react-bootstrap';
 import { DragDropContext } from 'react-beautiful-dnd';
 import StageColumn from './StageColumn';
 import CandidateDetails from './CandidateDetails';
-import { useNavigate } from 'react-router-dom';
 
 const PositionsDetails = () => {
     const { id } = useParams();
@@ -127,4 +126,3 @@ const PositionsDetails = () => {
 };
 
 export default PositionsDetails;
-

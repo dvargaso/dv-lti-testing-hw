@@ -16,9 +16,17 @@ Cypress.Commands.add('interceptPositionPage', (positionId = 1) => {
   ).as('getCandidates')
 })
 
-// Simulates a drag-and-drop using pointer events.
-// react-beautiful-dnd ignores HTML5 drag events and uses its own pointer event
-// handling, so this is the minimum viable approach without cypress-real-events.
+// rbd attaches mousemove/mouseup to window, not to DOM elements, so
+// cy.trigger() doesn't reach its handlers. Dispatch directly via win.dispatchEvent().
+function fireMouseEvent(win, type, x, y, buttons = 1) {
+  win.dispatchEvent(new win.MouseEvent(type, {
+    bubbles: true, cancelable: true, view: win, button: 0, buttons, clientX: x, clientY: y,
+  }))
+}
+
+// Simulates a drag-and-drop for react-beautiful-dnd.
+// rbd ignores HTML5 drag events and uses its own pointer event handling,
+// so this is the minimum viable approach without cypress-real-events.
 // If tests become flaky, replace with: npm i -D cypress-real-events
 // and use cy.realMouseDown() / cy.realMouseMove() / cy.realMouseUp().
 Cypress.Commands.add('dragTo', { prevSubject: 'element' }, (source, targetAlias) => {
@@ -31,23 +39,14 @@ Cypress.Commands.add('dragTo', { prevSubject: 'element' }, (source, targetAlias)
     const srcX = srcRect.left + srcRect.width / 2
     const srcY = srcRect.top + srcRect.height / 2
 
-
     cy.wrap(source)
       .trigger('mousedown', { button: 0, buttons: 1, clientX: srcX, clientY: srcY, force: true })
 
-    // Each event gets its own Cypress command tick so React 18 can flush
-    // the MOVE state update before the DROP fires.
-    const mouseEvent = (win, type, x, y, buttons = 1) =>
-      win.dispatchEvent(new win.MouseEvent(type, {
-        bubbles: true, cancelable: true, view: win, button: 0, buttons, clientX: x, clientY: y,
-      }))
-
-    cy.window().then(win => mouseEvent(win, 'mousemove', srcX + 10, srcY))
-    cy.window().then(win => mouseEvent(win, 'mousemove', tgtX, tgtY))
-    // rbd throttles MOVE processing through requestAnimationFrame.
-    // Wait for one rAF cycle (~16ms) before sending mouseup so the MOVE
-    // state is committed and rbd detects the correct destination column.
+    cy.window().then(win => fireMouseEvent(win, 'mousemove', srcX + 10, srcY))
+    cy.window().then(win => fireMouseEvent(win, 'mousemove', tgtX, tgtY))
+    // rbd throttles MOVE processing through requestAnimationFrame — wait one
+    // rAF cycle so the destination column is committed before DROP fires.
     cy.window().then(win => new Cypress.Promise(resolve => win.requestAnimationFrame(resolve)))
-    cy.window().then(win => mouseEvent(win, 'mouseup',   tgtX, tgtY, 0))
+    cy.window().then(win => fireMouseEvent(win, 'mouseup', tgtX, tgtY, 0))
   })
 })
