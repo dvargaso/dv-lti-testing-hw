@@ -33,3 +33,25 @@ Include these rules at a minimum:
 - Keep tests maintained as the system changes. Skipped or ignored tests are technical debt.
 
 Reference the e2e.md from CLAUDE.md
+
+
+# Implement e2e tests
+
+Implement a small set of Cypress E2E tests for the Position page.
+
+Follow the project e2e.md rules and Cypress spec best practices: clear test names, stable selectors, independent tests, realistic test data, cy.intercept() for API assertions, and no fragile waits.
+
+Also validate the test logic against expected CTS business rules and behavior. Flag any flaws, missing cases, or assumptions before coding.
+
+Cover these scenarios:
+
+1. Position page loads correctly:
+    * the position title is visible
+    * hiring process phase columns are visible
+    * candidate cards appear in the correct column based on their current phase
+2. Candidate phase change:
+    * drag a candidate card from one phase column to another
+    * verify the card appears in the new column
+    * verify the backend is updated through PUT /candidate/:id
+
+Before coding, inspect the existing Cypress setup, routes, selectors, fixtures, API patterns, and candidate workflow rules. Reuse existing conventions. Ask only necessary questions before implementing.

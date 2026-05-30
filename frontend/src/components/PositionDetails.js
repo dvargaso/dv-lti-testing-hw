@@ -15,45 +15,48 @@ const PositionsDetails = () => {
 
     useEffect(() => {
         const fetchInterviewFlow = async () => {
+            const response = await fetch(`http://localhost:3010/positions/${id}/interviewFlow`);
+            const data = await response.json();
+            const interviewSteps = data.interviewFlow.interviewFlow.interviewSteps.map(step => ({
+                title: step.name,
+                id: step.id,
+                candidates: []
+            }));
+            setStages(interviewSteps);
+            setPositionName(data.interviewFlow.positionName);
+            return interviewSteps;
+        };
+
+        // fetchCandidates receives the resolved steps directly to avoid depending on
+        // React state that may not have committed yet when both calls ran in parallel.
+        const fetchCandidates = async (steps) => {
+            const response = await fetch(`http://localhost:3010/positions/${id}/candidates`);
+            const candidates = await response.json();
+            setStages(
+                steps.map(stage => ({
+                    ...stage,
+                    candidates: candidates
+                        .filter(candidate => candidate.currentInterviewStep === stage.title)
+                        .map(candidate => ({
+                            id: candidate.candidateId.toString(),
+                            name: candidate.fullName,
+                            rating: candidate.averageScore,
+                            applicationId: candidate.applicationId
+                        }))
+                }))
+            );
+        };
+
+        const init = async () => {
             try {
-                const response = await fetch(`http://localhost:3010/positions/${id}/interviewFlow`);
-                const data = await response.json();
-                const interviewSteps = data.interviewFlow.interviewFlow.interviewSteps.map(step => ({
-                    title: step.name,
-                    id: step.id,
-                    candidates: []
-                }));
-                setStages(interviewSteps);
-                setPositionName(data.interviewFlow.positionName);
+                const steps = await fetchInterviewFlow();
+                await fetchCandidates(steps);
             } catch (error) {
-                console.error('Error fetching interview flow:', error);
+                console.error('Error loading position page:', error);
             }
         };
 
-        const fetchCandidates = async () => {
-            try {
-                const response = await fetch(`http://localhost:3010/positions/${id}/candidates`);
-                const candidates = await response.json();
-                setStages(prevStages =>
-                    prevStages.map(stage => ({
-                        ...stage,
-                        candidates: candidates
-                            .filter(candidate => candidate.currentInterviewStep === stage.title)
-                            .map(candidate => ({
-                                id: candidate.candidateId.toString(),
-                                name: candidate.fullName,
-                                rating: candidate.averageScore,
-                                applicationId: candidate.applicationId
-                            }))
-                    }))
-                );
-            } catch (error) {
-                console.error('Error fetching candidates:', error);
-            }
-        };
-
-        fetchInterviewFlow();
-        fetchCandidates();
+        init();
     }, [id]);
 
     const updateCandidateStep = async (candidateId, applicationId, newStep) => {
@@ -110,7 +113,7 @@ const PositionsDetails = () => {
             <Button variant="link" onClick={() => navigate('/positions')} className="mb-3">
                 Volver a Posiciones
             </Button>
-            <h2 className="text-center mb-4">{positionName}</h2>
+            <h2 className="text-center mb-4" data-cy="position-title">{positionName}</h2>
             <DragDropContext onDragEnd={onDragEnd}>
                 <Row>
                     {stages.map((stage, index) => (
