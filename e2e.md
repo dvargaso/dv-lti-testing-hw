@@ -1,24 +1,23 @@
 # E2E Testing Rules
 
 ## Scope
-Tests live in `cypress/integration/` as `*.spec.js` files. Specs cover user-facing flows through the React frontend (port 3000) against the Express backend (port 3010). Backend integration tests belong in `backend/src/`.
+Tests live in `cypress/integration/` as `*.spec.js` files. Specs cover user-facing flows through the React frontend (port 3000). Only the frontend needs to be running — all backend calls are intercepted. Backend integration tests belong in `backend/src/`.
 
 ## Selector Strategy
-Priority order: `data-cy` attribute → ARIA role (`cy.findByRole`) → label (`cy.findByLabelText`) → `data-testid`. Never select by CSS class, inline style, or position (`:nth-child`, `:first`). Add a `data-cy` attribute to the source when no stable selector exists. Class refactors must not break tests.
+Priority order: `data-cy` attribute > ARIA role (`cy.findByRole`) > label (`cy.findByLabelText`) > `data-testid`. Never select by CSS class, inline style, or position (`:nth-child`, `:first`). Add a `data-cy` attribute to the source when no stable selector exists. Class refactors must not break tests.
 
 ## Test Independence
 Every spec must pass when run alone: `cypress run --spec cypress/integration/path/to/spec.spec.js`. Reset state in `beforeEach`. Never depend on test order or share mutable state across `it` blocks.
 
 ## Test Data
-Run a dedicated `db_test` service defined in `docker-compose.yml` pointing to `LTIdb_test`. Reset it before each run with `prisma migrate reset`. Use `cy.task()` backed by Prisma (registered in `setupNodeEvents` inside `cypress.config.js`) for per-test record setup and teardown — base tasks on the existing `backend/prisma/seed.ts`. Use `@faker-js/faker` for dynamic fields (names, emails) to avoid collisions. Never hardcode database IDs.
+Stub all API calls with `cy.intercept()` — tests must not hit `localhost:3010` for real. Store response payloads as fixtures in `cypress/fixtures/` and keep them in sync with `backend/api-spec.yaml`. Use `@faker-js/faker` for any dynamic fields to avoid hardcoded values that could rot.
 
 ```js
 // example usage in a spec
 beforeEach(() => {
-  cy.task('db:seed:candidate', { firstName: faker.person.firstName() })
-})
-afterEach(() => {
-  cy.task('db:teardown')
+  cy.intercept('GET', 'http://localhost:3010/positions/*/candidates', { fixture: 'candidates.json' }).as('getCandidates')
+  cy.visit('/positions/1')
+  cy.wait('@getCandidates')
 })
 ```
 
