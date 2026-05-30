@@ -71,6 +71,8 @@ Test files live alongside source files (`candidateService.test.ts`, `candidateCo
 cd backend && npx jest src/application/services/candidateService.test.ts
 ```
 
+For E2E testing with Cypress, see [e2e.md](./e2e.md).
+
 ## Environment Variables
 
 Root `.env` controls docker-compose (`DB_PASSWORD`, `DB_USER`, `DB_NAME`, `DB_PORT`). Backend `backend/.env` sets `DATABASE_URL` for Prisma.
